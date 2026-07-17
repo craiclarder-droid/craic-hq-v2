@@ -1,0 +1,9 @@
+{
+  "name": "Craic HQ",
+  "short_name": "Craic HQ",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f4f0e7",
+  "theme_color": "#111111",
+  "icons": []
+}
