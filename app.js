@@ -546,7 +546,39 @@ window.completeQueueBatch=()=>{
   item.status="Completed";item.actualQty=qty;item.batchCode=code;item.completedDate=d.date;
   updatePlanStatus(plan);db.productionDraft=null;
   logActivity("Production completed",`${code}: ${qty} ${blend(item.blendId)?.name||item.blendId}`,d.date);
-  save();alert(`Batch complete: ${code}`);render();
+  save();
+  const createHaccp=confirm(`Batch complete: ${code}\n\nCreate a Production HACCP record for this batch now?`);
+  if(createHaccp){
+    const existingProductionHaccp=db.haccp.some(h=>
+      h.date===d.date &&
+      h.type==="Production" &&
+      String(h.notes||"").includes(code)
+    );
+    if(!existingProductionHaccp){
+      const productionHaccp={
+        id:uid("HACCP"),
+        date:d.date,
+        type:"Production",
+        by:d.completedBy||db.settings?.defaultOperator||"James",
+        result:"Pass",
+        notes:`Batch ${code} — ${blend(item.blendId)?.name||item.blendId}. Planned ${item.plannedQty}, actual ${qty}. Ingredients checked against master recipe and supplier lots recorded.`,
+        action:"N/A",
+        batchCode:code,
+        blendId:item.blendId,
+        productionRunId:db.productionRuns[db.productionRuns.length-1]?.id||""
+      };
+      db.haccp.push(productionHaccp);
+      const latestRun=db.productionRuns[db.productionRuns.length-1];
+      if(latestRun){
+        latestRun.haccpRecordIds=latestRun.haccpRecordIds||[];
+        if(!latestRun.haccpRecordIds.includes(productionHaccp.id))latestRun.haccpRecordIds.push(productionHaccp.id);
+      }
+      logActivity("Production HACCP created",`${code}: Pass`,d.date);
+      save();
+    }
+  }
+  alert(`Batch complete: ${code}`);
+  render();
 }
 
 function customersView(){
@@ -661,7 +693,11 @@ window.runTrace=()=>{
   });
   document.getElementById("traceResults").innerHTML=runs.map(r=>{
     const outs=db.orders.filter(o=>o.batchCode===r.batchCode),inputs=r.inputs||r.ingredients||[];
-    const linked=(r.haccpRecordIds||[]).map(id=>db.haccp.find(h=>h.id===id)).filter(Boolean);
+    const savedLinked=(r.haccpRecordIds||[]).map(id=>db.haccp.find(h=>h.id===id)).filter(Boolean);
+    const sameDateLinked=db.haccp.filter(h=>h.date===r.date);
+    const linked=[...savedLinked,...sameDateLinked].filter((record,index,array)=>
+      record && array.findIndex(x=>x.id===record.id)===index
+    );
     const plan=db.productionPlans.find(p=>p.id===r.planId);
     return `<section class="card"><h3>${esc(r.batchCode)} · ${esc(blend(r.blendId)?.name||r.blendId)}</h3>
     <p><b>Production plan:</b> ${esc(plan?.name||"Standalone / opening stock")}</p>
@@ -671,7 +707,7 @@ window.runTrace=()=>{
     ${inputs.map(i=>`<tr><td>${esc(i.name)}</td><td>${fmt(i.qty)} ${esc(i.unit)}</td><td><b>${esc(i.supplierBatch)}</b></td></tr>`).join("")}</table>
     <h4>Recipe snapshot</h4><table><tr><th>Ingredient</th><th>Per pouch</th></tr>
     ${Object.entries(r.recipeSnapshot||{}).map(([rid,qty])=>`<tr><td>${esc(resource(rid)?.name||rid)}</td><td>${fmt(qty)} ${esc(resource(rid)?.unit||"g")}</td></tr>`).join("")}</table>
-    <h4>Linked HACCP records</h4>${linked.length?`<table><tr><th>Type</th><th>Result</th><th>By</th><th>Notes</th></tr>${linked.map(h=>`<tr><td>${esc(h.type)}</td><td>${esc(h.result)}</td><td>${esc(h.by)}</td><td>${esc(h.notes)}</td></tr>`).join("")}</table>`:"<p>No HACCP records were recorded on this production date.</p>"}
+    <h4>Linked HACCP records</h4>${linked.length?`<table><tr><th>Type</th><th>Result</th><th>By</th><th>Notes</th></tr>${linked.map(h=>`<tr><td>${esc(h.type)}</td><td>${esc(h.result)}</td><td>${esc(h.by)}</td><td>${esc(h.notes)}</td></tr>`).join("")}</table>`:"<p>No HACCP records are currently recorded for this production date.</p>"}
     <h4>Customers supplied</h4>${outs.length?`<table><tr><th>Date</th><th>Customer</th><th>Qty</th></tr>${outs.map(o=>`<tr><td>${o.date}</td><td>${esc(db.customers.find(c=>c.id===o.customerId)?.business||"")}</td><td>${o.qty}</td></tr>`).join("")}</table>`:"<p>None recorded.</p>"}</section>`;
   }).join("")||`<section class="card">No matching traceability record.</section>`;
 }
@@ -679,7 +715,7 @@ window.runTrace=()=>{
 function haccpView(){
   app.innerHTML=`<section class="card"><h2>Add HACCP Record</h2>
   <div class="row"><div><label>Date</label><input id="hDate" type="date" value="${today()}"></div>
-  <div><label>Record type</label><select id="hType"><option>Cleaning</option><option>Pest Control</option><option>Calibration</option><option>Complaint</option><option>Corrective Action</option><option>Recall Test</option><option>Market Checklist</option><option>Opening Check</option><option>Closing Check</option><option>Temperature</option><option>Maintenance</option><option>Glass & Plastic Inspection</option></select></div>
+  <div><label>Record type</label><select id="hType"><option>Cleaning</option><option>Production</option><option>Pest Control</option><option>Calibration</option><option>Complaint</option><option>Corrective Action</option><option>Recall Test</option><option>Market Checklist</option><option>Opening Check</option><option>Closing Check</option><option>Temperature</option><option>Maintenance</option><option>Glass & Plastic Inspection</option><option>Supplier Delivery Check</option></select></div>
   <div><label>Completed by</label><input id="hBy" value="James"></div><div><label>Result</label><select id="hResult"><option>Pass</option><option>Fail</option><option>N/A</option></select></div></div>
   <label>Notes / observations</label><textarea id="hNotes"></textarea><label>Corrective action</label><textarea id="hAction"></textarea><button onclick="addHaccp()">Save signed record</button></section>
   <section class="card"><h2>HACCP Log</h2><table><tr><th>Date</th><th>Type</th><th>By</th><th>Result</th><th>Notes</th><th>Action</th></tr>
@@ -765,7 +801,7 @@ window.savePackagingConfig=()=>{
 window.saveBlendPrice=id=>{const b=blend(id);b.wholesale=Number(document.getElementById("wh-"+id).value);b.retail=Number(document.getElementById("rt-"+id).value);b.market=Number(document.getElementById("mk-"+id).value);save();logActivity("Selling prices updated",b.name);render()}
 
 function backupView(){
-  app.innerHTML=`<section class="card"><h2>Backup & Transfer</h2><p><b>App version:</b> 1.1.4 Packaging Manager</p><div class="notice"><b>Current version:</b> data is stored on this device. Export a backup regularly. Live multi-device sync is not connected yet.</div>
+  app.innerHTML=`<section class="card"><h2>Backup & Transfer</h2><p><b>App version:</b> 1.1.5 HACCP Linking</p><div class="notice"><b>Current version:</b> data is stored on this device. Export a backup regularly. Live multi-device sync is not connected yet.</div>
   <div class="actions"><button onclick="exportBackup()">Export full backup</button><button class="secondary" onclick="document.getElementById('importFile').click()">Import backup</button><input hidden id="importFile" type="file" accept=".json" onchange="importBackup(event)"><button class="danger" onclick="resetApp()">Reset all data</button></div>
   <p>${db.productionRuns.length} batches · ${db.ingredientBatches.length} supplier lots · ${db.orders.length} orders · ${db.haccp.length} HACCP records · ${(db.activity||[]).length} activity entries</p></section>`;
 }

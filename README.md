@@ -1,20 +1,25 @@
-# Craic HQ 1.1.4 — Packaging Manager
+# Craic HQ 1.1.5 — HACCP Linking Patch
 
-Data-preserving patch. Existing browser data remains under the same database key.
+Data-preserving patch based on Craic HQ 1.1.4 Packaging Manager.
 
-Adds:
-- Packaging Manager under Settings
-- Enable/disable each packaging resource
-- Quantity used per finished pouch
-- Desiccant disabled by default
-- Enabled packaging feeds production planning, capacity, costing, validation, FIFO stock deduction and traceability
-- Historical production and traceability records remain unchanged
-- New packaging resources start disabled until you enable them
+Fixes:
+- Completed batches display HACCP records from the same production date, including records entered afterwards.
+- Existing saved HACCP links remain intact.
+- Duplicate HACCP records are not displayed twice.
+- After completing a batch, the app asks whether to create a Production HACCP record.
+- Generated records include date, operator, batch code, blend, planned quantity, actual quantity and Pass result.
+- Duplicate automatic Production HACCP records for the same batch are blocked.
+- Adds Production and Supplier Delivery Check as HACCP record types.
 
-Default:
-- Black Pouch: enabled, 1 per pouch
-- Front Label: enabled, 1 per pouch
-- Back Label: enabled, 1 per pouch
-- Desiccant: disabled
+Unchanged:
+- Ingredient and packaging stock
+- Supplier lots
+- Production calculations
+- Recipes
+- Costing
+- Reports
+- Existing batches
+- Existing HACCP records
+- Existing traceability history
 
-Export a backup before updating, then upload all files to the root of the GitHub repository.
+Export a backup before updating, then upload all files to the GitHub repository root.
