@@ -53,10 +53,31 @@ const seed = {
 };
 
 let db = loadAndMigrate();
+
+function showCloudStatus(message, ok = false) {
+  let box = document.getElementById("craicCloudStatus");
+  if (!box) {
+    box = document.createElement("div");
+    box.id = "craicCloudStatus";
+    box.style.cssText = "position:fixed;left:12px;right:12px;bottom:12px;z-index:99999;padding:12px 14px;border-radius:8px;font:600 14px/1.35 system-ui,-apple-system,sans-serif;box-shadow:0 2px 12px rgba(0,0,0,.25);";
+    document.body.appendChild(box);
+  }
+  box.style.background = ok ? "#dff5e3" : "#ffe1e1";
+  box.style.color = ok ? "#155724" : "#7a1010";
+  box.style.border = ok ? "1px solid #9bd3a5" : "1px solid #e7a1a1";
+  box.textContent = message;
+}
+
+function cloudErrorText(error) {
+  if (!error) return "Unknown Supabase error";
+  return [error.message, error.details, error.hint, error.code].filter(Boolean).join(" | ");
+}
+
 async function loadFromCloud() {
   const { data: { user } } = await supabaseClient.auth.getUser();
 
   if (!user) {
+    showCloudStatus("CLOUD: NOT LOGGED IN — cloud sync cannot run.");
     console.log("Craic HQ: no Supabase login - using local data.");
     return false;
   }
@@ -68,6 +89,7 @@ async function loadFromCloud() {
     .maybeSingle();
 
   if (error) {
+    showCloudStatus("CLOUD LOAD FAILED: " + cloudErrorText(error));
     console.error("Craic HQ cloud load failed:", error);
     return false;
   }
@@ -75,10 +97,12 @@ async function loadFromCloud() {
   if (data?.data) {
     localStorage.setItem(DB_KEY, JSON.stringify(data.data));
     db = loadAndMigrate();
+    showCloudStatus("CLOUD: CONNECTED — data loaded from Supabase.", true);
     console.log("Craic HQ loaded from Supabase.");
     return true;
   }
 
+  showCloudStatus("CLOUD: LOGGED IN — no cloud record yet. Creating it now...");
   console.log("Craic HQ: no cloud database found yet.");
   return false;
 }
@@ -122,6 +146,7 @@ async function save() {
   const { data: { user } } = await supabaseClient.auth.getUser();
 
   if (!user) {
+    showCloudStatus("CLOUD SAVE SKIPPED: not logged into Supabase.");
     console.warn("Craic HQ: not logged into Supabase - cloud save skipped.");
     return;
   }
@@ -137,8 +162,10 @@ async function save() {
     });
 
   if (error) {
+    showCloudStatus("CLOUD SAVE FAILED: " + cloudErrorText(error));
     console.error("Craic HQ cloud save failed:", error);
   } else {
+    showCloudStatus("CLOUD: CONNECTED — save successful.", true);
     console.log("Craic HQ saved to Supabase.");
   }
 }
