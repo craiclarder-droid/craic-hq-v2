@@ -193,7 +193,7 @@
       <div class="row"><div><label>Started</label><input id="htStart" type="date" value="${today()}"></div><div><label>Finished / removed</label><input id="htEnd" type="date"></div><div><label>Safe / eligible for honey harvest from</label><input id="htHarvest" type="date"></div></div>
       <div class="row"><div><label>Honey supers present during treatment?</label><select id="htSupers"><option value="no">No</option><option value="yes">Yes</option></select></div><div><label>Manufacturer harvest / withdrawal restrictions followed?</label><select id="htRestriction"><option value="yes">Yes</option><option value="no">No</option></select></div></div>
       <label>Notes</label><textarea id="htNotes"></textarea><button onclick="addBeeTreatment()">Save treatment</button>`:'<div class="notice">Add a colony first.</div>'}
-      ${db.beeTreatments.length?`<table><tr><th>Colony</th><th>Treatment</th><th>Dates</th><th>Supers present</th><th>Restrictions followed</th><th>Harvest from</th></tr>${db.beeTreatments.slice().reverse().map(t=>`<tr><td>${esc(apiary(hive(t.hiveId)?.apiaryId)?.name||"")} · ${esc(hive(t.hiveId)?.name||"")}</td><td>${esc(t.product||"")}<div class="small">${esc(t.dose||"")}</div></td><td>${esc(t.startDate||"")} → ${esc(t.endDate||"")}</td><td>${boolLabel(t.supersPresent)}</td><td>${boolLabel(t.restrictionFollowed)}</td><td>${esc(t.harvestFrom||"")}</td></tr>`).join("")}</table>`:""}
+      ${db.beeTreatments.length?`<table><tr><th>Colony</th><th>Treatment</th><th>Dates</th><th>Supers present</th><th>Restrictions followed</th><th>Harvest from</th><th></th></tr>${db.beeTreatments.slice().reverse().map(t=>`<tr><td>${esc(apiary(hive(t.hiveId)?.apiaryId)?.name||"")} · ${esc(hive(t.hiveId)?.name||"")}</td><td>${esc(t.product||"")}<div class="small">${esc(t.dose||"")}</div></td><td>${esc(t.startDate||"")} → ${esc(t.endDate||"")}</td><td>${boolLabel(t.supersPresent)}</td><td>${boolLabel(t.restrictionFollowed)}</td><td>${esc(t.harvestFrom||"")}</td><td><button type="button" onclick="deleteBeeTreatment('${t.id}')">Delete</button></td></tr>`).join("")}</table>`:""}
     </section>`;
   }
 
@@ -265,6 +265,16 @@
     logActivity("Honey colony added",`${apiary(apiaryId)?.name||""}: ${name}`);save();render();
   };
   window.toggleHoneyHive=id=>{const h=hive(id);if(!h)return;h.active=h.active===false;save();render()};
+  window.deleteBeeTreatment=(id)=>{
+    const t=db.beeTreatments.find(x=>x.id===id);
+    if(!t)return;
+    const label=`${apiary(hive(t.hiveId)?.apiaryId)?.name||""} · ${hive(t.hiveId)?.name||""} — ${t.product||"treatment"}`;
+    if(!confirm(`Delete this bee treatment record?\n\n${label}\n\nThis cannot be undone.`))return;
+    db.beeTreatments=db.beeTreatments.filter(x=>x.id!==id);
+    logActivity("Bee treatment deleted",label,today());
+    save();
+    render();
+  };
   window.addBeeTreatment=()=>{
     const hiveId=val("htHive"),product=val("htProduct").trim();if(!hiveId||!product)return alert("Choose a colony and enter the treatment/product.");
     const t={id:uid("TRT"),hiveId,product,dose:val("htDose").trim(),startDate:val("htStart"),endDate:val("htEnd"),harvestFrom:val("htHarvest"),supersPresent:val("htSupers")==="yes",restrictionFollowed:val("htRestriction")==="yes",notes:val("htNotes").trim()};
