@@ -922,42 +922,34 @@ async function signOutCraicHQ() {
 window.signInCraicHQ = signInCraicHQ;
 window.signOutCraicHQ = signOutCraicHQ;
 async function startCraicHQ() {
-  const { data: { user } } = await supabaseClient.auth.getUser();
+  // Always show the login first. This prevents an old/local session from
+  // dropping straight into the dashboard without a usable Supabase session.
+  app.innerHTML = `
+    <section class="card" style="max-width:520px;margin:32px auto">
+      <h2>Craic HQ Cloud Login</h2>
+      <p class="muted">Log in to connect this device to the Craic HQ cloud.</p>
+      <label>Email</label>
+      <input id="craicLoginEmail" type="email" autocomplete="email">
+      <label>Password</label>
+      <input id="craicLoginPassword" type="password" autocomplete="current-password">
+      <div class="actions"><button id="craicLoginButton">Log in & connect cloud</button></div>
+      <div id="craicLoginStatus" class="muted"></div>
+    </section>
+  `;
 
-  if (!user) {
-    app.innerHTML = `
-      <section class="card">
-        <h2>Craic HQ Login</h2>
-        <label>Email</label>
-        <input id="craicLoginEmail" type="email" autocomplete="email">
-
-        <label>Password</label>
-        <input id="craicLoginPassword" type="password" autocomplete="current-password">
-
-        <div class="actions">
-          <button id="craicLoginButton">Log in</button>
-        </div>
-      </section>
-    `;
-
-    document.getElementById("craicLoginButton").onclick = async () => {
-      const email = document.getElementById("craicLoginEmail").value.trim();
-      const password = document.getElementById("craicLoginPassword").value;
-
-      if (!email || !password) {
-        alert("Enter your email and password.");
-        return;
-      }
-
-      await signInCraicHQ(email, password);
-    };
-
-    return;
-  }
-
-  const loaded = await loadFromCloud();
-  if (!loaded) await save();
-  render();
+  document.getElementById("craicLoginButton").onclick = async () => {
+    const email = document.getElementById("craicLoginEmail").value.trim();
+    const password = document.getElementById("craicLoginPassword").value;
+    const status = document.getElementById("craicLoginStatus");
+    if (!email || !password) {
+      status.textContent = "Enter your email and password.";
+      return;
+    }
+    status.textContent = "Connecting...";
+    await supabaseClient.auth.signOut();
+    const ok = await signInCraicHQ(email, password);
+    if (!ok) status.textContent = "Login failed. Check the message above.";
+  };
 }
 
 if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
