@@ -328,6 +328,5 @@
     db.haccp.push(rec);logActivity("HACCP recorded",`Honey Cleaning: ${rec.result}`,rec.date);save();render();
   };
 
-  // Re-render once so the dashboard and wrapped views are live immediately.
-  render();
+  // Do not render here: craic-cloud.js owns startup and shows the cloud login first.
 })();
