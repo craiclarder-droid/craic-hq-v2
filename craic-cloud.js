@@ -922,12 +922,23 @@ async function signOutCraicHQ() {
 window.signInCraicHQ = signInCraicHQ;
 window.signOutCraicHQ = signOutCraicHQ;
 async function startCraicHQ() {
-  // Always show the login first. This prevents an old/local session from
-  // dropping straight into the dashboard without a usable Supabase session.
+  // Resume a valid Supabase session automatically. If there is no session,
+  // show login without touching the local Craic HQ database.
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (session?.user) {
+    const loaded = await loadFromCloud();
+    if (!loaded) {
+      // Keep local data intact if cloud loading fails. Never overwrite it on startup.
+      showCloudStatus("CLOUD: LOGGED IN — local data kept. Save a record to sync.");
+    }
+    render();
+    return;
+  }
+
   app.innerHTML = `
     <section class="card" style="max-width:520px;margin:32px auto">
       <h2>Craic HQ Cloud Login</h2>
-      <p class="muted">Log in to connect this device to the Craic HQ cloud.</p>
+      <p class="muted">Log in to connect this device to the Craic HQ cloud. Your local Craic HQ data will not be cleared.</p>
       <label>Email</label>
       <input id="craicLoginEmail" type="email" autocomplete="email">
       <label>Password</label>
@@ -946,9 +957,15 @@ async function startCraicHQ() {
       return;
     }
     status.textContent = "Connecting...";
-    await supabaseClient.auth.signOut();
-    const ok = await signInCraicHQ(email, password);
-    if (!ok) status.textContent = "Login failed. Check the message above.";
+    const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+    if (error) {
+      status.textContent = "Login failed: " + error.message;
+      return;
+    }
+    // Do not pull cloud data over newer local edits at login.
+    // Push the current local database first; the user has an explicit backup.
+    await save();
+    render();
   };
 }
 
