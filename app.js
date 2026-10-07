@@ -1,4 +1,10 @@
+const SUPABASE_URL = "https://svbappqtjnkivjbcxcpg.supabase.co";
+const SUPABASE_KEY = "sb_publishable_ZzpDMdUmxkcHu00qnaA4QA_OBaT5KJi";
 
+const supabaseClient = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY
+);
 const DB_KEY = "craic_hq_v2";
 
 const seed = {
@@ -47,6 +53,36 @@ const seed = {
 };
 
 let db = loadAndMigrate();
+async function loadFromCloud() {
+  const { data: { user } } = await supabaseClient.auth.getUser();
+
+  if (!user) {
+    console.log("Craic HQ: no Supabase login - using local data.");
+    return false;
+  }
+
+  const { data, error } = await supabaseClient
+    .from("craic_app_data")
+    .select("data")
+    .eq("user_id", user.id)
+    .eq("app_key", DB_KEY)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Craic HQ cloud load failed:", error);
+    return false;
+  }
+
+  if (data?.data) {
+    localStorage.setItem(DB_KEY, JSON.stringify(data.data));
+    db = loadAndMigrate();
+    console.log("Craic HQ loaded from Supabase.");
+    return true;
+  }
+
+  console.log("Craic HQ: no cloud database found yet.");
+  return false;
+}
 let currentView = "dashboard";
 let preparedProduction = null;
 const app = document.getElementById("app");
@@ -79,7 +115,35 @@ function loadAndMigrate(){
   localStorage.setItem(DB_KEY,JSON.stringify(out));
   return out;
 }
-function save(){localStorage.setItem(DB_KEY,JSON.stringify(db))}
+async function save() {
+  // Keep a local emergency copy
+  localStorage.setItem(DB_KEY, JSON.stringify(db));
+
+  // Save the full Craic HQ database to Supabase
+  const { data: { user } } = await supabaseClient.auth.getUser();
+
+  if (!user) {
+    console.warn("Craic HQ: not logged into Supabase - cloud save skipped.");
+    return;
+  }
+
+  const { error } = await supabaseClient
+    .from("craic_app_data")
+    .upsert({
+      user_id: user.id,
+      app_key: DB_KEY,
+      data: db,
+      updated_at: new Date().toISOString()
+    }, {
+      onConflict: "user_id,app_key"
+    });
+
+  if (error) {
+    console.error("Craic HQ cloud save failed:", error);
+  } else {
+    console.log("Craic HQ saved to Supabase.");
+  }
+}
 function uid(prefix){return prefix+"-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,6)}
 function today(){return new Date().toISOString().slice(0,10)}
 function blend(id){return db.blends.find(x=>x.id===id)}
@@ -808,6 +872,66 @@ function backupView(){
 window.exportBackup=()=>{const blob=new Blob([JSON.stringify(db,null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`craic-hq-backup-${today()}.json`;a.click();URL.revokeObjectURL(a.href)}
 window.importBackup=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{db=JSON.parse(r.result);if(!Array.isArray(db.productionPlans))db.productionPlans=[];if(db.productionDraft===undefined)db.productionDraft=null;if(!db.packagingConfig)db.packagingConfig={pouch:{enabled:true,qtyPerPouch:1},frontlabel:{enabled:true,qtyPerPouch:1},backlabel:{enabled:true,qtyPerPouch:1},desiccant:{enabled:false,qtyPerPouch:0}};save();render();alert("Backup imported.")}catch{alert("Invalid backup file.")}};r.readAsText(f)}
 window.resetApp=()=>{if(confirm("Delete all Craic HQ data on this device?")){db=clone(seed);save();render()}}
+async function signInCraicHQ(email, password) {
+  const { error } = await supabaseClient.auth.signInWithPassword({
+    email,
+    password
+  });
+
+  if (error) {
+    alert("Login failed: " + error.message);
+    return false;
+  }
+
+  await loadFromCloud();
+  render();
+  return true;
+}
+
+async function signOutCraicHQ() {
+  await supabaseClient.auth.signOut();
+  location.reload();
+}
+
+window.signInCraicHQ = signInCraicHQ;
+window.signOutCraicHQ = signOutCraicHQ;
+async function startCraicHQ() {
+  const { data: { user } } = await supabaseClient.auth.getUser();
+
+  if (!user) {
+    app.innerHTML = `
+      <section class="card">
+        <h2>Craic HQ Login</h2>
+        <label>Email</label>
+        <input id="craicLoginEmail" type="email" autocomplete="email">
+
+        <label>Password</label>
+        <input id="craicLoginPassword" type="password" autocomplete="current-password">
+
+        <div class="actions">
+          <button id="craicLoginButton">Log in</button>
+        </div>
+      </section>
+    `;
+
+    document.getElementById("craicLoginButton").onclick = async () => {
+      const email = document.getElementById("craicLoginEmail").value.trim();
+      const password = document.getElementById("craicLoginPassword").value;
+
+      if (!email || !password) {
+        alert("Enter your email and password.");
+        return;
+      }
+
+      await signInCraicHQ(email, password);
+    };
+
+    return;
+  }
+
+  await loadFromCloud();
+  render();
+}
 
 if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
-render();
+startCraicHQ();
