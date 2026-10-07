@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#111111" />
+  <title>Craic HQ Cloud Login</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="styles.css?v=cloud-final">
+</head>
+<body>
+<header>
+  <div><h1>Craic HQ</h1><p>Stock · Production · Traceability · HACCP · Honey</p></div>
+  <button id="menuBtn" class="secondary">☰</button>
+</header>
+<nav id="nav">
+  <button data-view="dashboard">Dashboard</button><button data-view="stock">Finished Stock</button>
+  <button data-view="planner">Production Planner</button><button data-view="resources">Ingredients & Packaging</button>
+  <button data-view="blends">Blend Manager</button><button data-view="recipes">Master Recipes</button>
+  <button data-view="production">Production</button><button data-view="orders">Orders</button>
+  <button data-view="customers">Customers</button><button data-view="deliveries">Deliveries</button>
+  <button data-view="costing">Costing</button><button data-view="reports">Reports</button>
+  <button data-view="traceability">Traceability</button><button data-view="haccp">HACCP</button>
+  <button data-view="settings">Settings</button><button data-view="backup">Backup</button>
+</nav>
+<main id="app"></main>
+<script>
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.getRegistrations().then(rs => Promise.all(rs.map(r => r.unregister())));
+}
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="craic-cloud.js?v=20261007-login3"></script>
+<script src="honey.js?v=20261007-final"></script>
+</body>
+</html>
