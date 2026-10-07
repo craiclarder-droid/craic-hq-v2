@@ -56,7 +56,8 @@
     return warnings.length?`<span class="badge bad">CHECK</span><div class="small">${warnings.map(esc).join("<br>")}</div>`:`<span class="badge good">Recorded checks OK</span>`;
   }
 
-  ensureHoneyDb();
+  // Do not initialise or render Honey until Craic HQ has passed the cloud login.
+  // Calling save()/render() here used to overwrite the login screen on startup.
 
   // Add Honey navigation without disturbing the existing index navigation.
   const navEl=document.getElementById("nav");
