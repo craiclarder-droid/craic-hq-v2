@@ -64,8 +64,7 @@ async function loadFromCloud() {
   const { data, error } = await supabaseClient
     .from("craic_app_data")
     .select("data")
-    .eq("user_id", user.id)
-    .eq("app_key", DB_KEY)
+    .eq("id", user.id)
     .maybeSingle();
 
   if (error) {
@@ -130,12 +129,11 @@ async function save() {
   const { error } = await supabaseClient
     .from("craic_app_data")
     .upsert({
-      user_id: user.id,
-      app_key: DB_KEY,
+      id: user.id,
       data: db,
       updated_at: new Date().toISOString()
     }, {
-      onConflict: "user_id,app_key"
+      onConflict: "id"
     });
 
   if (error) {
@@ -883,7 +881,8 @@ async function signInCraicHQ(email, password) {
     return false;
   }
 
-  await loadFromCloud();
+  const loaded = await loadFromCloud();
+  if (!loaded) await save();
   render();
   return true;
 }
@@ -929,7 +928,8 @@ async function startCraicHQ() {
     return;
   }
 
-  await loadFromCloud();
+  const loaded = await loadFromCloud();
+  if (!loaded) await save();
   render();
 }
 
