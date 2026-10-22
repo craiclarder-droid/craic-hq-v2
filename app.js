@@ -111,6 +111,7 @@ let preparedProduction = null;
 const app = document.getElementById("app");
 
 function clone(x){return JSON.parse(JSON.stringify(x))}
+function uidSeed(name){return 'wh-seed-'+name.toLowerCase().replace(/[^a-z0-9]+/g,'-')}
 function loadAndMigrate(){
   let loaded=null;
   for(const key of [DB_KEY,"craic_hq_v1"]){
@@ -119,6 +120,18 @@ function loadAndMigrate(){
   }
   const out=loaded||clone(seed);
   for(const [k,v] of Object.entries(seed)) if(out[k]===undefined) out[k]=clone(v);
+  // Initial directory transcribed from the user's October 2026 spreadsheet screenshot.
+  // Only clearly readable names, towns and statuses are imported; missing details stay blank.
+  if(!out.wholesaleScreenshotSeeded){
+    if(!Array.isArray(out.wholesaleStockists))out.wholesaleStockists=[];
+    const screenshotStockists=[["Connors Butchers","Troon","Cold"],["Struan Apiaries","Dingwall","Cold"],["Valhalla Croft","Brora","Cold"],["Arkleston Farmshop","Arkleston","Active"],["Gowanlea","Johnstone","Active"],["The Yellow Deli","Cullen","Active"],["Balgown Croft","Skye","Active"],["Elf Bothy","Beith","Active"],["Village Butchers","Newtownabbey","Active"],["ARL Agri","Caithness","Cold"],["Scott Brothers Butchers","Dundee","Lead"],["Mhor Bread","Callander","Prospect"],["The Wee Larder Aberfoyle","Aberfoyle","Active"],["Elderslie Butchers","Elderslie","Active"],["Bickets","Barrhead","Active"]];
+    const existing=new Set(out.wholesaleStockists.map(x=>String(x.shopName||"").trim().toLowerCase()));
+    for(const [shopName,location,status] of screenshotStockists){
+      if(existing.has(shopName.toLowerCase()))continue;
+      out.wholesaleStockists.push({id:uidSeed(shopName),shopName,location,status,wholesaleOrders:[],notes:"Imported from original stockist spreadsheet screenshot; review and update details."});
+    }
+    out.wholesaleScreenshotSeeded=true;
+  }
   if(!Array.isArray(out.ingredientBatches)) out.ingredientBatches=[];
   if(!Array.isArray(out.productionPlans)) out.productionPlans=[];
   if(out.productionDraft===undefined) out.productionDraft=null;
