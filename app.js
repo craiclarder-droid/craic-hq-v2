@@ -132,6 +132,20 @@ function loadAndMigrate(){
     }
     out.wholesaleScreenshotSeeded=true;
   }
+  // 22 Oct: newly confirmed stockists and Connor's restock. Idempotent, non-destructive.
+  if(!out.wholesaleOctoberUpdate2026){
+    if(!Array.isArray(out.wholesaleStockists))out.wholesaleStockists=[];
+    const names=new Set(out.wholesaleStockists.map(x=>String(x.shopName||"").trim().toLowerCase()));
+    for(const [shopName,location] of [["Gledbrook Butchers","Paisley"],["A.D. Paton Butchers","Largs"]]){
+      if(!names.has(shopName.toLowerCase()))out.wholesaleStockists.push({id:uidSeed(shopName),shopName,location,status:"Active",wholesaleOrders:[],notes:"Confirmed as a stockist by owner 22 Oct 2026. Order dates and quantities to be added."});
+    }
+    const connor=out.wholesaleStockists.find(x=>/connors? butchers/i.test(String(x.shopName||"")));
+    if(connor){
+      if(!connor.status||connor.status==="Cold"||connor.status==="Prospect")connor.status="Active";
+      connor.notes=[connor.notes||"","Restock confirmed by owner 22 Oct 2026; exact order date, quantity and value not recorded."].filter(Boolean).join("\n");
+    }
+    out.wholesaleOctoberUpdate2026=true;
+  }
   if(!Array.isArray(out.ingredientBatches)) out.ingredientBatches=[];
   if(!Array.isArray(out.productionPlans)) out.productionPlans=[];
   if(out.productionDraft===undefined) out.productionDraft=null;
