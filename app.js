@@ -49,7 +49,7 @@ const seed = {
     LH:{salt:26,lemon:7,garlic:15,oregano:4,thyme:4,parsley:5,blackpepper:2,onion:5,brownsugar:2}
   },
   ingredientBatches:[],
-  productionRuns:[], productionPlans:[], productionDraft:null, customers:[], orders:[], deliveries:[], movements:[], haccp:[], activity:[], packagingConfig:{pouch:{enabled:true,qtyPerPouch:1},frontlabel:{enabled:true,qtyPerPouch:1},backlabel:{enabled:true,qtyPerPouch:1},desiccant:{enabled:false,qtyPerPouch:0}}, settings:{businessName:"Craic Larder",address:"",ehoNumber:"",defaultOperator:"James",labourPerBatch:0}
+  productionRuns:[], productionPlans:[], productionDraft:null, customers:[], wholesaleStockists:[], orders:[], deliveries:[], movements:[], haccp:[], activity:[], packagingConfig:{pouch:{enabled:true,qtyPerPouch:1},frontlabel:{enabled:true,qtyPerPouch:1},backlabel:{enabled:true,qtyPerPouch:1},desiccant:{enabled:false,qtyPerPouch:0}}, settings:{businessName:"Craic Larder",address:"",ehoNumber:"",defaultOperator:"James",labourPerBatch:0}
 };
 
 let db = loadAndMigrate();
@@ -262,7 +262,7 @@ document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>nav(b.dataset.v
 document.getElementById("menuBtn").onclick=()=>document.getElementById("nav").scrollIntoView({behavior:"smooth"});
 
 function render(){
-  const map={dashboard,stock:stockView,planner:plannerView,resources:resourcesView,blends:blendsView,recipes:recipesView,production:productionView,orders:ordersView,customers:customersView,deliveries:deliveriesView,costing:costingView,reports:reportsView,traceability:traceabilityView,haccp:haccpView,settings:settingsView,backup:backupView};
+  const map={dashboard,stock:stockView,planner:plannerView,resources:resourcesView,blends:blendsView,recipes:recipesView,production:productionView,orders:ordersView,customers:customersView,wholesale:wholesaleView,deliveries:deliveriesView,costing:costingView,reports:reportsView,traceability:traceabilityView,haccp:haccpView,settings:settingsView,backup:backupView};
   (map[currentView]||dashboard)();
 }
 function dashboard(){
