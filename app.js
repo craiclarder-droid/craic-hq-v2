@@ -255,7 +255,7 @@ function finishedStockCostValue(){
   return db.stock.reduce((sum,s)=>sum+(Number(s.qty||0)*blendCost(s.blendId).total),0);
 }
 function finishedStockRetailValue(){
-  return db.stock.reduce((sum,s)=>sum+(Number(s.qty||0)*Number(blend(s.blendId)?.retail||0)),0);
+  return db.stock.reduce((sum,s)=>sum+(Number(s.qty||0)*4),0);
 }
 
 function currentPlan(){
@@ -301,7 +301,7 @@ function dashboard(){
   const finishedRetail=finishedStockRetailValue();
   const recent=(db.activity||[]).slice(-10).reverse();
   app.innerHTML=`<div class="grid">
-  <section class="card"><div class="muted">Finished pouches</div><div class="kpi">${db.stock.reduce((a,b)=>a+Number(b.qty),0)}</div></section>
+  <section class="card"><div class="muted">Current finished stock (estimated)</div><div class="kpi">${db.stock.reduce((a,b)=>a+Number(b.qty),0)}</div></section>
   <section class="card"><div class="muted">Low-stock blends</div><div class="kpi">${lowBlends}</div></section>
   <section class="card"><div class="muted">Low resources</div><div class="kpi">${lowResources}</div></section>
   <section class="card"><div class="muted">Open ingredient lots</div><div class="kpi">${db.ingredientBatches.filter(b=>b.remaining>0).length}</div></section>
@@ -311,7 +311,8 @@ function dashboard(){
     <div class="metric-row"><span>Ingredients</span><b>${money(rawValue)}</b></div>
     <div class="metric-row"><span>Packaging</span><b>${money(packagingValue)}</b></div>
     <div class="metric-row"><span>Finished stock at cost</span><b>${money(finishedCost)}</b></div>
-    <div class="metric-row"><span>Finished stock retail value</span><b>${money(finishedRetail)}</b></div>
+    <div class="metric-row"><span>Current finished stock · retail planning (£4/pouch)</span><b>${money(finishedRetail)}</b></div>
+    <div class="metric-row"><span>Current finished stock · wholesale (£2.50/pouch)</span><b>${money(db.stock.reduce((sum,s)=>sum+Number(s.qty||0)*2.5,0))}</b></div>
   </section>
   <section class="card"><h3>Records</h3>
     <div class="metric-row"><span>Production batches</span><b>${db.productionRuns.length}</b></div>
