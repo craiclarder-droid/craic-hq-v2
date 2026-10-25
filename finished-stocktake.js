@@ -10,7 +10,7 @@ const panel='<section class="card"><h2>Physical Finished Stocktake</h2><p>Count 
 app.insertAdjacentHTML("afterbegin",panel);
 }
 const old=stockView;
-stockView=function(){old();renderTake()};
+stockView=function(){old();renderTake();const opening=[...app.querySelectorAll("section.card")].find(el=>el.querySelector("h2")?.textContent==="Add Opening Finished Stock");if(opening)opening.style.display="none";const legacy=app.querySelectorAll("table tr");for(const tr of legacy){if(tr.cells?.[0]?.textContent?.trim()==="Test")tr.style.display="none"}const note=document.createElement("section");note.className="card";note.innerHTML="<h2>Batch traceability</h2><p>Physical stock has been reconciled, but historical finished-batch remaining figures still reflect unrecorded sales. Do not use those remaining figures as physical stock or assume a particular batch is still available. Original production and HACCP records are preserved.</p>";app.appendChild(note)};
 window.fstSave=function(){
 init();const counts={},changes=[];for(const b of activeBlends()){const input=document.getElementById("fst-"+b.id);if(!input||input.value.trim()===""||!Number.isInteger(Number(input.value))||Number(input.value)<0)return alert("Enter a whole-number physical count for every blend.");const actual=Number(input.value),before=Number(stock(b.id)?.qty||0);counts[b.id]=actual;changes.push({blendId:b.id,before,actual,difference:actual-before})}
 const detail=changes.map(x=>blend(x.blendId).name+": "+x.before+" → "+x.actual).join("\n");
