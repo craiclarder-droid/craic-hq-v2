@@ -264,7 +264,7 @@ function currentPlan(){
 function planTotals(plan){
   const totals={};
   if(!plan) return totals;
-  for(const item of plan.items.filter(i=>i.status!=="Cancelled")){
+  for(const item of plan.items.filter(i=>i.status!=="Cancelled" && i.status!=="Completed")){
     const recipe=db.recipes[item.blendId]||{};
     for(const [rid,per] of Object.entries(recipe)){
       totals[rid]=(totals[rid]||0)+(Number(per)*Number(item.plannedQty||0));
