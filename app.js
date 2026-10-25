@@ -161,7 +161,7 @@ function loadAndMigrate(){
     if(!out.packagingConfig[r.id])out.packagingConfig[r.id]={enabled:false,qtyPerPouch:0};
   }
   out.resources=out.resources.map(r=>({...r,batch:undefined,active:r.active!==false}));
-  out.blends=out.blends.map(b=>({...b,active:b.active!==false}));
+  out.blends=out.blends.map(b=>({...b,active:b.active!==false}));\n  // Hide only an unused zero-stock test blend; preserve any blend with records.\n  for(const b of out.blends){if(b.name.trim().toLowerCase()==="test" && !out.productionRuns.some(r=>r.blendId===b.id) && !out.orders.some(o=>o.blendId===b.id) && !out.stock.some(x=>x.blendId===b.id && Number(x.qty)>0))b.active=false;}
   localStorage.setItem(DB_KEY,JSON.stringify(out));
   return out;
 }
@@ -259,12 +259,12 @@ function finishedStockRetailValue(){
 }
 
 function currentPlan(){
-  return db.productionPlans.find(p=>p.status!=="Completed") || null;
+  return db.productionPlans.find(p=>p.status!=="Completed" && p.items?.some(i=>i.status!=="Cancelled" && i.status!=="Completed")) || null;
 }
 function planTotals(plan){
   const totals={};
   if(!plan) return totals;
-  for(const item of plan.items.filter(i=>i.status!=="Cancelled")){
+  for(const item of plan.items.filter(i=>i.status!=="Cancelled" && i.status!=="Completed")){
     const recipe=db.recipes[item.blendId]||{};
     for(const [rid,per] of Object.entries(recipe)){
       totals[rid]=(totals[rid]||0)+(Number(per)*Number(item.plannedQty||0));
