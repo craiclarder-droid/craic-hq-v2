@@ -20,5 +20,5 @@ for(const change of changes){stock(change.blendId).qty=change.actual;db.movement
 db.finishedStocktakes.push(entry);logActivity("Finished stocktake",changes.map(x=>blend(x.blendId).name+" "+x.actual).join(", "));save();render();
 };
 const originalDashboard=dashboard;
-dashboard=function(){originalDashboard();const take=last();const box=document.querySelector("#app .grid .card .muted");if(box){box.textContent=take?"Current finished stock · last counted "+take.date.slice(0,10):"Finished stock estimate · no physical count yet"}};
+dashboard=function(){originalDashboard();const take=last();const box=[...document.querySelectorAll("#app .card .muted")].find(el=>el.textContent.includes("Current finished stock (estimated)"));if(box){box.textContent=take?"Current finished stock (estimate) · last counted "+take.date.slice(0,10):"Current finished stock (estimate) · no physical count yet"}};
 })();
