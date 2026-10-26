@@ -28,14 +28,7 @@ function setup(){
  scripts.append(scriptPanel);
  const salesSearch=sales.querySelector("#salesSearch"),cards=sales.querySelector("#salesCards");
  const searchHint=document.createElement("p");searchHint.className="muted small";searchHint.textContent="Tap a shop to call, record the outcome and set a follow-up. No sales figures needed.";sales.querySelector("h3").after(searchHint);
- function filterLeads(){
-  if(!cards)return;
-  const all=Array.isArray(db.wholesaleStockists)?db.wholesaleStockists:[];
-  const ids=new Set(all.filter(x=>x.salesProspectSource==="2026-10-22"||["Prospect","Contacted","Interested"].includes(x.status)).map(x=>x.id));
-  const records=all.filter(x=>ids.has(x.id));
-  const names=new Set(records.map(x=>x.shopName+"|"+x.location));
-  cards.querySelectorAll("details").forEach(card=>{const summary=card.querySelector("summary");const text=summary?summary.textContent:"";card.style.display=Array.from(names).some(n=>text.includes(n.split("|")[0]))?"":"none"});
- }
+ function filterLeads(){ /* Lead filters are handled by Sales Companion. */ }
  function activate(tab){
  selected=tab;existing.style.display=tab==="existing"?"":"none";leads.style.display=tab==="leads"?"":"none";due.style.display=tab==="followups"?"":"none";scripts.style.display=tab==="scripts"?"":"none";
  nav.querySelectorAll(".whTab").forEach(b=>{const active=b.dataset.tab===tab;b.className=active?"whTab":"secondary whTab";b.style.fontWeight=active?"700":"400";b.setAttribute("aria-pressed",String(active))});
