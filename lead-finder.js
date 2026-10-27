@@ -8,7 +8,7 @@ let results=[],busy=false;
 function mount(){
  const root=document.getElementById("wSalesCompanion");if(!root||root.querySelector("#craicLeadFinder"))return;
  const section=document.createElement("details");section.className="card";section.id="craicLeadFinder";
- section.innerHTML='<summary><b>🔎 Find new wholesale leads (free)</b></summary><p class="muted small">Discover businesses using OpenStreetMap. Contact details may be missing. Review before adding to your existing call list.</p><div class="actions"><label>Business type<select id="clfCategory">'+Object.keys(categories).map(x=>'<option>'+esc(x)+'</option>').join("")+'</select></label><label>Town or area<input id="clfPlace" value="Paisley" placeholder="e.g. Ayr, Glasgow"></label><label>Radius<select id="clfRadius"><option value="5000">5 km</option><option value="15000" selected>15 km</option><option value="30000">30 km</option><option value="50000">50 km</option></select></label><label>Maximum results<select id="clfCount"><option>10</option><option>20</option><option selected>30</option><option>50</option></select></label></div><button type="button" id="clfSearch">Find leads</button><p class="muted small" id="clfStatus" aria-live="polite"></p><div id="clfResults"></div>';
+ section.innerHTML='<summary><b>🔎 Find new wholesale leads (free)</b></summary><p class="muted small">Discover businesses using OpenStreetMap. Contact details may be missing. Review before adding to your existing call list.</p><div class="actions"><label>Business type<select id="clfCategory">'+["All shop types",...Object.keys(categories)].map(x=>'<option>'+esc(x)+'</option>').join("")+'</select></label><label>Town or area<input id="clfPlace" value="Paisley" placeholder="e.g. Ayr, Glasgow"></label><label>Radius<select id="clfRadius"><option value="5000">5 km</option><option value="15000" selected>15 km</option><option value="30000">30 km</option><option value="50000">50 km</option></select></label><label>Maximum results<select id="clfCount"><option>10</option><option>20</option><option selected>30</option><option>50</option></select></label></div><button type="button" id="clfSearch">Find leads</button><p class="muted small" id="clfStatus" aria-live="polite"></p><div id="clfResults"></div>';
  root.insertBefore(section,root.firstChild);
  section.querySelector("#clfSearch").onclick=search;
 }
@@ -23,13 +23,13 @@ async function search(){
  const geo=await fetch("https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=gb&q="+encodeURIComponent(place+", Scotland"),{headers:{"Accept":"application/json"}});
  if(!geo.ok)throw Error("Location search unavailable");
  const loc=(await geo.json())[0];if(!loc)throw Error("Area not found. Try a nearby town.");
- const [key,value]=categories[cat].split("=");
- const query='[out:json][timeout:25];(nwr["'+key+'"="'+value+'"](around:'+radius+','+Number(loc.lat)+','+Number(loc.lon)+'););out center '+Math.min(count*5,250)+';';
+ const filters=cat==="All shop types"?Object.values(categories):[categories[cat]];
+ const query='[out:json][timeout:25];('+filters.map(f=>{const [key,value]=f.split("=");return 'nwr["'+key+'"="'+value+'"](around:'+radius+','+Number(loc.lat)+','+Number(loc.lon)+');'}).join("")+');out center;';
  const res=await fetch("https://overpass.kumi.systems/api/interpreter",{method:"POST",body:new URLSearchParams({data:query})});
  if(!res.ok)throw Error("Free map search is busy. Please try again later.");
  const data=await res.json(),known=new Set((Array.isArray(db.wholesaleStockists)?db.wholesaleStockists:[]).map(x=>norm(x.shopName)+"|"+norm(x.location)));
  const seen=new Set();
- results=(data.elements||[]).map(x=>{const t=x.tags||{};return {name:t.name||"",town:t["addr:city"]||t["addr:town"]||t["addr:village"]||place,phone:t.phone||t["contact:phone"]||"",website:t.website||t["contact:website"]||"",email:t.email||t["contact:email"]||"",category:cat,source:"OpenStreetMap "+x.type+"/"+x.id}}).filter(x=>{const k=norm(x.name)+"|"+norm(x.town);if(!x.name||known.has(k)||seen.has(k))return false;seen.add(k);return true}).slice(0,count);
+ results=(data.elements||[]).map(x=>{const t=x.tags||{};return {name:t.name||"",town:t["addr:city"]||t["addr:town"]||t["addr:village"]||place,phone:t.phone||t["contact:phone"]||"",website:t.website||t["contact:website"]||"",email:t.email||t["contact:email"]||"",category:cat==="All shop types"?(Object.keys(categories).find(k=>categories[k]===(t.shop?"shop="+t.shop:""))||"Other shop"):cat,source:"OpenStreetMap "+x.type+"/"+x.id}}).filter(x=>{const k=norm(x.name)+"|"+norm(x.town);if(!x.name||known.has(k)||seen.has(k))return false;seen.add(k);return true}).slice(0,count);
  status.textContent=results.length+" potential new businesses found. Details come from volunteer-maintained map records; verify before calling.";
  render();
  }catch(err){status.textContent=err.message+" No existing leads have been changed."}finally{busy=false}
