@@ -8,6 +8,7 @@ const groups=[
  ["Stock & Purchasing",[["stock","Finished Stock"],["resources","Ingredients & Packaging"],["deliveries","Deliveries"]]],
  ["Production",[["planner","Quick Restock"],["production","Production Runs"],["blends","Blend Manager"],["recipes","Master Recipes"]]],
  ["Sales & Customers",[["orders","Orders"],["customers","Customers"],["wholesale","Wholesale"]]],
+ ["Honey",[["honey","Honey Management"]]],
  ["Food Safety",[["haccp","HACCP"],["traceability","Traceability"]]],
  ["Business",[["costing","Costing"],["reports","Reports"],["settings","Settings"],["backup","Backup"]]]
 ];
